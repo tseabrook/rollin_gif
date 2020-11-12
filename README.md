@@ -3,7 +3,8 @@ Generates a rotating gif from an image.
 
 ### Requirements
 
-Python 3.6 or higher
+Python 3
+
 Pillow: https://pillow.readthedocs.io/en/stable/installation.html
 
 ### Usage
