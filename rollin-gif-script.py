@@ -157,7 +157,7 @@ def save_transparent_gif(images: List[Image.Image], durations: Union[int, List[i
     root_frame.save(save_file, **save_args)
 
 
-def generate_rollin_gif(src_filename, output_filename=None, fps=50, gif_time=2, clockwise=True):
+def generate_rollin_gif(src_filename, output_filename=None, fps=50, gif_time=2, clockwise=1):
     PROG_RESOLUTION = 10  # resolution of progress indicator
     src_filename, file_ext = src_filename.split('.')
     file_ext = '.'+file_ext
@@ -172,6 +172,15 @@ def generate_rollin_gif(src_filename, output_filename=None, fps=50, gif_time=2, 
     else:
         direction = 1
 
+    created_png = False
+    if file_ext is not '.png':
+        im = im.convert('RGBA')
+        created_png = True
+        im.save(src_filename+'.png', format='PNG', optimize=True)
+        file_ext = '.png'
+        im = Image.open(src_filename + file_ext)
+    else:
+        im = im.convert('RGBA')
     print('Generating '+str(num_images)+' images.')
     for i in range(num_images):
         angle = direction * (i * deg_step)
@@ -200,13 +209,14 @@ def generate_rollin_gif(src_filename, output_filename=None, fps=50, gif_time=2, 
                 output_filename = output_filename.split('.')[0] + '.gif'
             else:
                 output_filename += '.gif'
-
     save_transparent_gif(rollin_images, max([(gif_time/num_images), 20]), output_filename)  # 20 milliseconds = 50fps = highest supported by browsers
 
     print('Deleting images')
     for filename in filenames:
         if os.path.exists(filename):
             os.remove(filename)
+    if created_png:
+        os.remove(src_filename+'.png')
 
     try:
         from pygifsicle import optimize
