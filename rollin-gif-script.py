@@ -156,7 +156,7 @@ def save_transparent_gif(images: List[Image.Image], durations: Union[int, List[i
     root_frame.save(save_file, **save_args)
 
 
-def generate_rollin_gif(src_filename, output_filename=None, fps=50, gif_time=2):
+def generate_rollin_gif(src_filename, output_filename=None, fps=50, gif_time=2, clockwise=True):
     PROG_RESOLUTION = 10  # resolution of progress indicator
     src_filename, file_ext = src_filename.split('.')
     file_ext = '.'+file_ext
@@ -166,10 +166,14 @@ def generate_rollin_gif(src_filename, output_filename=None, fps=50, gif_time=2):
     filenames = []
     progress_ids = [int((x / PROG_RESOLUTION) * num_images)-1 for x in list(range(1, PROG_RESOLUTION + 1, 1))]
     progress_percentages = [((x / PROG_RESOLUTION) * 100) for x in list(range(1, PROG_RESOLUTION + 1, 1))]
+    if clockwise:
+        direction = -1
+    else:
+        direction = 1
 
     print('Generating '+str(num_images)+' images.')
     for i in range(num_images):
-        angle = -(i * deg_step)
+        angle = direction * (i * deg_step)
         rotated_im = im.rotate(angle)
         alpha = rotated_im.getchannel('A')  # isolate transparency
         rotated_im = rotated_im.convert('RGB').convert('P', palette=Image.ADAPTIVE, colors=255)
@@ -236,6 +240,12 @@ if __name__ == '__main__':
              Note: Minimum duration is limited by a maximum frames-per-second of 50.'''
     )
     parser.add_argument(
+        '--clockwise',
+        default=True,
+        type=str,
+        help='''Set False for anti-clockwise.'''
+    )
+    parser.add_argument(
         '--output',
         default=None,
         type=str,
@@ -247,4 +257,4 @@ if __name__ == '__main__':
         print('Usage: python rollin-gif-script.py [filename] --deg [degrees(int)] --dur [duration(float)]')
         print('Use python rollin-gif-script.py -h for more information')
     else:
-        generate_rollin_gif(args.filename, output_filename=args.output, fps=args.fps, gif_time=args.duration)
+        generate_rollin_gif(args.filename, output_filename=args.output, fps=args.fps, gif_time=args.duration, clockwise=args.clockwise)
