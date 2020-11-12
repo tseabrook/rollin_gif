@@ -4,6 +4,8 @@ import os
 import argparse
 import sys
 
+# Transparency issue solved by egocarib in included code, found at https://gist.github.com/egocarib/ea022799cca8a102d14c54a22c45efe0.
+
 # This code adapted from https://github.com/python-pillow/Pillow/issues/4644 to resolve an issue
 # described in https://github.com/python-pillow/Pillow/issues/4640
 #
@@ -156,6 +158,8 @@ def save_transparent_gif(images: List[Image.Image], durations: Union[int, List[i
     root_frame, save_args = _create_animated_gif(images, durations)
     root_frame.save(save_file, **save_args)
 
+# The above was written by egocarib https://gist.github.com/egocarib/ea022799cca8a102d14c54a22c45efe0
+# The following is original work by Arcanewinds.
 
 def generate_rollin_gif(src_filename, output_filename=None, fps=50, gif_time=2, clockwise=1, size=None):
     PROG_RESOLUTION = 10  # resolution of progress indicator
