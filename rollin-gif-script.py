@@ -157,7 +157,7 @@ def save_transparent_gif(images: List[Image.Image], durations: Union[int, List[i
     root_frame.save(save_file, **save_args)
 
 
-def generate_rollin_gif(src_filename, output_filename=None, fps=50, gif_time=2, clockwise=1):
+def generate_rollin_gif(src_filename, output_filename=None, fps=50, gif_time=2, clockwise=1, size=None):
     PROG_RESOLUTION = 10  # resolution of progress indicator
     src_filename, file_ext = src_filename.split('.')
     file_ext = '.'+file_ext
@@ -181,6 +181,8 @@ def generate_rollin_gif(src_filename, output_filename=None, fps=50, gif_time=2, 
         im = Image.open(src_filename + file_ext)
     else:
         im = im.convert('RGBA')
+    if size is not None:
+        im = im.resize(size)
     print('Generating '+str(num_images)+' images.')
     for i in range(num_images):
         angle = direction * (i * deg_step)
@@ -229,6 +231,13 @@ def generate_rollin_gif(src_filename, output_filename=None, fps=50, gif_time=2, 
 
     return src_filename+'.gif'
 
+def img_size(s):
+    try:
+        width, height = map(int, s.split(','))
+        return width, height
+    except:
+        raise argparse.ArgumentTypeError("Image size must be width,height")
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -249,9 +258,9 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--duration',
-        default=2.,
+        default=1.2,
         type=float,
-        help='''Duration of the .gif in seconds. Default=2.
+        help='''Duration of the .gif in seconds. Default=1.2.
              Note: Minimum duration is limited by a maximum frames-per-second of 50.'''
     )
     parser.add_argument(
@@ -266,10 +275,16 @@ if __name__ == '__main__':
         type=str,
         help='''Output filename.'''
     )
+    parser.add_argument(
+        '--size',
+        default=None,
+        type=img_size,
+        help='''Output image size width,height.'''
+    )
     args = parser.parse_args()
     if args.filename is None:
         print('Please enter the filename of an image to make a rollin gif.')
         print('Usage: python rollin-gif-script.py [filename] --deg [degrees(int)] --dur [duration(float)]')
         print('Use python rollin-gif-script.py -h for more information')
     else:
-        generate_rollin_gif(args.filename, output_filename=args.output, fps=args.fps, gif_time=args.duration, clockwise=args.clockwise)
+        generate_rollin_gif(args.filename, output_filename=args.output, fps=args.fps, gif_time=args.duration, clockwise=args.clockwise, size=args.size)
