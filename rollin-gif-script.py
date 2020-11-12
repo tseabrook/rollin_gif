@@ -166,7 +166,7 @@ def generate_rollin_gif(src_filename, output_filename=None, fps=50, gif_time=2, 
     filenames = []
     progress_ids = [int((x / PROG_RESOLUTION) * num_images)-1 for x in list(range(1, PROG_RESOLUTION + 1, 1))]
     progress_percentages = [((x / PROG_RESOLUTION) * 100) for x in list(range(1, PROG_RESOLUTION + 1, 1))]
-    if clockwise:
+    if clockwise == 1:
         direction = -1
     else:
         direction = 1
@@ -242,9 +242,9 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '--clockwise',
-        default=True,
-        type=str,
-        help='''Set False for anti-clockwise.'''
+        default=1,
+        type=int,
+        help='''Set to 1 for clockwise, or any other integer for anti-clockwise.'''
     )
     parser.add_argument(
         '--output',
