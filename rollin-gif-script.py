@@ -2,6 +2,7 @@ from PIL import Image
 
 import os
 import argparse
+import sys
 
 # This code adapted from https://github.com/python-pillow/Pillow/issues/4644 to resolve an issue
 # described in https://github.com/python-pillow/Pillow/issues/4640
@@ -207,9 +208,12 @@ def generate_rollin_gif(src_filename, output_filename=None, fps=50, gif_time=2, 
         if os.path.exists(filename):
             os.remove(filename)
 
-    # print('Optimizing .gif')
-    # from pygifsicle import optimize
-    # optimize(src_filename+'.gif')
+    try:
+        from pygifsicle import optimize
+        print('Optimizing .gif')
+        optimize(src_filename+'.gif')
+    except:
+        print('For optimized .gifs install pygifsicle.')
 
     print('Rollin .gif generated: '+output_filename)
 
