@@ -18,10 +18,10 @@ Requires Pillow to be installed before running: https://pillow.readthedocs.io/en
 
 *--size* :    Output image size width,height.
 
-*--fps* :     Frames per second of the .gif (affects file-size) Note: Maximum frames-per-second for browser-compatibility is 50.
+*--fps* :     Frames per second of the .gif (affects file-size) Note: Maximum frames-per-second for browser-compatibility is 50. (Default=50)
 
-*--duration*, *--dur* :   Duration of the .gif in seconds. Default=1.2.
+*--duration*, *--dur* :   Duration of the .gif in seconds. (Default=1.2)
 
-*--clockwise*, *--direction* :    Set to 1 for clockwise, or any other integer for anti-clockwise.
+*--clockwise*, *--direction* :    Set to 1 for clockwise, or any other integer for anti-clockwise (Default=1)
 
 *--output* :    Output filename.
