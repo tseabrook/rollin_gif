@@ -3,10 +3,11 @@ Generates a rotating gif from an image.
 
 ### Requirements
 
-Requires Pillow to be installed before running: https://pillow.readthedocs.io/en/stable/installation.html
+Python 3.6 or higher
+Pillow: https://pillow.readthedocs.io/en/stable/installation.html
 
 ### Usage
-``` usage: rollin-gif-script [-h] filename [--size SIZE] [--fps FPS] [--duration DURATION] [--clockwise CLOCKWISE] [--output OUTPUT] ```
+``` python rollin-gif-script.py [-h] filename [--size SIZE] [--fps FPS] [--duration DURATION] [--clockwise CLOCKWISE] [--output OUTPUT] ```
 
 #### positional arguments:
 
