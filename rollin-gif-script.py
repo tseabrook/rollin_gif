@@ -175,11 +175,12 @@ def generate_rollin_gif(src_filename, output_filename=None, fps=50, gif_time=2, 
     for i in range(num_images):
         angle = direction * (i * deg_step)
         rotated_im = im.rotate(angle)
-        alpha = rotated_im.getchannel('A')  # isolate transparency
-        rotated_im = rotated_im.convert('RGB').convert('P', palette=Image.ADAPTIVE, colors=255)
-        mask = Image.eval(alpha, lambda a: 255 if a <= 128 else 0)  # transparency mask
-        rotated_im.paste(255, mask)  # add transparency
-        rotated_im.info['transparency'] = 255  # encode transparency value
+        if file_ext is '.png':
+            alpha = rotated_im.getchannel('A')  # isolate transparency
+            rotated_im = rotated_im.convert('RGB').convert('P', palette=Image.ADAPTIVE, colors=255)
+            mask = Image.eval(alpha, lambda a: 255 if a <= 128 else 0)  # transparency mask
+            rotated_im.paste(255, mask)  # add transparency
+            rotated_im.info['transparency'] = 255  # encode transparency value
         this_filename = src_filename+f'_{i}'+file_ext
         rotated_im.save(this_filename, optimize=False)
         filenames.append(this_filename)
