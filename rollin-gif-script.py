@@ -137,7 +137,7 @@ def _create_animated_gif(images: List[Image.Image], durations: Union[int, List[i
         optimize=False,
         append_images=new_images[1:],
         duration=durations,
-        disposal=0,  # Other disposals don't work
+        disposal=2,  # Other disposals don't work
         loop=0)
     return output_image, save_kwargs
 
