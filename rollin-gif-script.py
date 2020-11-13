@@ -135,7 +135,7 @@ def _create_animated_gif(images: List[Image.Image], durations: Union[int, List[i
         optimize=False,
         append_images=new_images[1:],
         duration=durations,
-        disposal=2,  # Other disposals don't work
+        disposal=0,  # Other disposals don't work
         loop=0)
     return output_image, save_kwargs
 
@@ -157,13 +157,40 @@ def save_transparent_gif(images: List[Image.Image], durations: Union[int, List[i
     root_frame.save(save_file, **save_args)
 
 
-def generate_rollin_gif(src_filename, output_filename=None, fps=50, gif_time=2, clockwise=1, size=None):
+def generate_rollin_gif(src_filename, output_filename=None, fps=50, gif_time=2, clockwise=1, size=None, speed='linear', reverse=0, num_rotations=1):
     PROG_RESOLUTION = 10  # resolution of progress indicator
     src_filename, file_ext = src_filename.split('.')
     file_ext = '.'+file_ext
     im = Image.open(src_filename + file_ext)
+
     num_images = int(gif_time * fps)
-    deg_step = 360 / num_images
+    if speed != 'linear':
+        num_images = int(num_images/4)
+
+    # sum(range(min_step, avg_step, int(num_images/2)))
+    # excess_step = total_rotation - ((avg_step - min_step) * (num_images / 2))
+    # avg_excess_step = (excess_step / (num_images / 2))
+    # max_step = (2 * (avg_excess_step - avg_step) + avg_step)
+    total_rotation = num_rotations*360
+    avg_step = total_rotation/num_images
+    min_step = 1
+    max_step = avg_step + (avg_step - min_step)
+    #max_step = 32
+    #min_step = 2
+    if speed == 'increasing':
+        deg_step = [(x * ((max_step - min_step) / num_images))+min_step for x in range(num_images-1)]
+        deg_step = [x * ((num_rotations*360)/ sum(deg_step)) for x in deg_step]
+    elif speed == 'decreasing':
+        deg_step = [(x * ((max_step - min_step) / num_images))+min_step for x in range(num_images-1, -1, -1)]
+        deg_step = [x * ((num_rotations * 360) / sum(deg_step)) for x in deg_step]
+    elif speed == 'linear':
+        if reverse:
+            deg_step = (num_rotations*360) / num_images
+        else:
+            deg_step = 360 / num_images
+    else:
+        raise ValueError(f'Speed \'{speed}\' not recognised.')
+
     filenames = []
     progress_ids = [int((x / PROG_RESOLUTION) * num_images)-1 for x in list(range(1, PROG_RESOLUTION + 1, 1))]
     progress_percentages = [((x / PROG_RESOLUTION) * 100) for x in list(range(1, PROG_RESOLUTION + 1, 1))]
@@ -173,7 +200,7 @@ def generate_rollin_gif(src_filename, output_filename=None, fps=50, gif_time=2, 
         direction = 1
 
     created_png = False
-    if file_ext is not '.png':
+    if not file_ext == '.png':
         im = im.convert('RGBA')
         created_png = True
         im.save(src_filename+'.png', format='PNG', optimize=True)
@@ -184,25 +211,34 @@ def generate_rollin_gif(src_filename, output_filename=None, fps=50, gif_time=2, 
     if size is not None:
         im = im.resize(size)
     print('Generating '+str(num_images)+' images.')
+    rollin_images = []
+    cum_deg_step = 0
     for i in range(num_images):
-        angle = direction * (i * deg_step)
-        rotated_im = im.rotate(angle)
-        if file_ext is '.png':
+        #angle = direction * (i * deg_step)
+        if speed == 'linear':
+            angle = direction * (i * deg_step)
+            rotated_im = im.rotate(angle)
+        else:
+            angle = direction * cum_deg_step  # cum_deg_step
+            rotated_im = im.rotate(angle)
+            if i < (num_images - 1):
+                cum_deg_step += deg_step[i]  # cumulative
+        if file_ext == '.png':
             alpha = rotated_im.getchannel('A')  # isolate transparency
             rotated_im = rotated_im.convert('RGB').convert('P', palette=Image.ADAPTIVE, colors=255)
             mask = Image.eval(alpha, lambda a: 255 if a <= 128 else 0)  # transparency mask
             rotated_im.paste(255, mask)  # add transparency
             rotated_im.info['transparency'] = 255  # encode transparency value
-        this_filename = src_filename+f'_{i}'+file_ext
-        rotated_im.save(this_filename, optimize=False)
-        filenames.append(this_filename)
+        rollin_images.append(rotated_im)
+        # this_filename = src_filename+f'_{i}'+file_ext
+        # rotated_im.save(this_filename, optimize=False)
+        # filenames.append(this_filename)
         if i in progress_ids:
             print(f'Generating images: {progress_percentages[progress_ids.index(i)]}% complete.')
 
-    print('Converting images to .gif')
-    rollin_images = []
-    for filename in filenames:
-        rollin_images.append(Image.open(filename))
+    # rollin_images = []
+    # for filename in filenames:
+    #     rollin_images.append(Image.open(filename))
     if output_filename is None:
         output_filename = src_filename+'.gif'
     else:
@@ -211,25 +247,51 @@ def generate_rollin_gif(src_filename, output_filename=None, fps=50, gif_time=2, 
                 output_filename = output_filename.split('.')[0] + '.gif'
             else:
                 output_filename += '.gif'
-    save_transparent_gif(rollin_images, max([(gif_time/num_images), 20]), output_filename)  # 20 milliseconds = 50fps = highest supported by browsers
 
-    print('Deleting images')
-    for filename in filenames:
-        if os.path.exists(filename):
-            os.remove(filename)
-    if created_png:
-        os.remove(src_filename+'.png')
+    avg_dur = (gif_time*1000) / num_images
+    min_dur = 20
+    max_dur = avg_dur + (avg_dur - min_dur)
+    # min_dur = 20
+    # avg_dur = (gif_time / num_images)
+    # excess_dur = gif_time - ((avg_dur - min_dur) * (num_images/2))
+    # avg_excess_dur = (excess_dur / (num_images/2))
+    # max_dur = (2*(avg_excess_dur - avg_dur) + avg_dur)
+    # max_dur = 140
+    if speed == 'increasing':
+        print('Incrementally increasing rotation velocity.')
+        durations = [int((x * ((max_dur - min_dur) / num_images)) + min_dur) for x in range(num_images, -1, -1)]
+    elif speed == 'decreasing':
+        print('Incrementally decreasing rotation velocity.')
+        durations = [int((x * ((max_dur - min_dur) / num_images)) + min_dur) for x in range(num_images)]
+    else:
+        durations = max([int((num_images/gif_time)*1000), 20])
+    if reverse == 1:
+        print('Adding reverse order images.')
+        for i in range(num_images - 1, -1, -1):
+            rollin_images.append(rollin_images[i])
+            durations.append(durations[i])
+    print('Converting images to .gif')
+    save_transparent_gif(rollin_images, durations, output_filename)  # 20 milliseconds = 50fps = highest supported by browsers
+    #save_transparent_gif(rollin_images, max([int((num_images/gif_time)*1000), 20]), output_filename)  # 20 milliseconds = 50fps = highest supported by browsers
+
+    # print('Deleting images')
+    # for filename in filenames:
+    #     if os.path.exists(filename):
+    #         os.remove(filename)
 
     try:
         from pygifsicle import optimize
         print('Optimizing .gif')
         optimize(src_filename+'.gif')
     except:
-        print('For optimized .gifs install pygifsicle.')
+        print('For file-size optimized .gifs, install pygifsicle.')
 
+    if created_png:
+        os.remove(src_filename+'.png')
     print('Rollin .gif generated: '+output_filename)
 
     return src_filename+'.gif'
+
 
 def img_size(s):
     try:
@@ -250,24 +312,48 @@ if __name__ == '__main__':
         help='Enter the filename of an image to make a rollin\' .gif'
     )
     parser.add_argument(
+        '--size',
+        default=None,
+        type=img_size,
+        help='''Output image size width,height.'''
+    )
+    parser.add_argument(
         '--fps',
         default=50,
-        type=int,
+        type=float,
         help='''Frames per second of the .gif (affects file-size)
                  Note: Maximum frames-per-second for browser-compatibility is 50.'''
     )
     parser.add_argument(
-        '--duration',
+        '--duration', '--dur',
         default=1.2,
         type=float,
         help='''Duration of the .gif in seconds. Default=1.2.
              Note: Minimum duration is limited by a maximum frames-per-second of 50.'''
     )
     parser.add_argument(
-        '--clockwise',
+        '--clockwise', '--direction',
         default=1,
         type=int,
         help='''Set to 1 for clockwise, or any other integer for anti-clockwise.'''
+    )
+    parser.add_argument(
+        '--speed',
+        default='linear',
+        type=str,
+        help='''Type of speed to use: \'linear\', \'increasing\', \'decreasing\'.'''
+    )
+    parser.add_argument(
+        '--reverse',
+        default=0,
+        type=int,
+        help='''Reverse at end of rotations, 0=False, 1=True'''
+    )
+    parser.add_argument(
+        '--num_rotations',
+        default=1.,
+        type=float,
+        help='''Number of rotations for non-linear speed.'''
     )
     parser.add_argument(
         '--output',
@@ -275,16 +361,18 @@ if __name__ == '__main__':
         type=str,
         help='''Output filename.'''
     )
-    parser.add_argument(
-        '--size',
-        default=None,
-        type=img_size,
-        help='''Output image size width,height.'''
-    )
     args = parser.parse_args()
     if args.filename is None:
         print('Please enter the filename of an image to make a rollin gif.')
         print('Usage: python rollin-gif-script.py [filename] --deg [degrees(int)] --dur [duration(float)]')
         print('Use python rollin-gif-script.py -h for more information')
     else:
-        generate_rollin_gif(args.filename, output_filename=args.output, fps=args.fps, gif_time=args.duration, clockwise=args.clockwise, size=args.size)
+        generate_rollin_gif(args.filename,
+                            output_filename=args.output,
+                            fps=args.fps,
+                            gif_time=args.duration,
+                            clockwise=args.clockwise,
+                            speed=args.speed,
+                            reverse=args.reverse,
+                            num_rotations=args.num_rotations,
+                            size=args.size)
